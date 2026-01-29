@@ -39,3 +39,28 @@ Steps will be added as the project progresses.
 ## What I Learned
 This section will capture real-world DevOps learnings during implementation.
 
+#### Terraform + LocalStack — Issues & Fixes (Quick Notes)
+
+- **AWS credential error during `terraform plan`**  
+  Cause: Terraform tried real AWS creds / IMDS  
+  Fix: Configure AWS provider only in root module with LocalStack endpoints + dummy creds
+
+- **Duplicate provider configuration**  
+  Cause: `provider "aws"` defined in multiple files  
+  Fix: Keep provider config in one place (`provider.tf` in root)
+
+- **Undeclared variable error**  
+  Cause: Variable declared only in module, not in root  
+  Fix: Declare variables separately in root and module, pass explicitly
+
+- **`terraform output` shows nothing**  
+  Cause: Outputs defined only inside module  
+  Fix: Re-export required outputs in root `outputs.tf`
+
+- **Outputs added after infra creation**  
+  Cause: Outputs were introduced later  
+  Fix: Run `terraform apply -refresh-only` to sync state
+
+- **LocalStack port 4566 already in use**  
+  Cause: LocalStack already running  
+  Fix: Reuse existing container, verify with `docker ps`
