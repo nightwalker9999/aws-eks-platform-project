@@ -64,3 +64,36 @@ This section will capture real-world DevOps learnings during implementation.
 - **LocalStack port 4566 already in use**  
   Cause: LocalStack already running  
   Fix: Reuse existing container, verify with `docker ps`
+
+## K8s Demo (Playground)
+
+### Deploy
+
+```bash
+kubectl apply -f k8s/base/app.yaml
+kubectl apply -f k8s/base/service.yaml
+kubectl apply -f k8s/base/ingress.yaml
+```
+
+### Install ingress-nginx
+
+```bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.2/deploy/static/provider/cloud/deploy.yaml
+kubectl -n ingress-nginx rollout status deploy/ingress-nginx-controller
+```
+
+### Verify
+
+```bash
+kubectl get deploy,svc,ingress
+kubectl -n ingress-nginx get svc ingress-nginx-controller
+```
+
+### Test (NodePort)
+
+```bash
+IP=$(kubectl get node controlplane -o jsonpath='{.status.addresses[?(@.type=="InternalIP")].address}')
+PORT=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.spec.ports[0].nodePort}')
+curl -H "Host: web.demo.local" http://$IP:$PORT | head
+```
+
