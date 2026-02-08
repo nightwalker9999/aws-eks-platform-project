@@ -1,0 +1,53 @@
+name: Kubernetes Manifest Validation
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'k8s/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'k8s/**'
+
+jobs:
+  validate-manifests:
+    name: Validate K8s Manifests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+      
+      - name: Install kubeval
+        run: |
+          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
+          tar xf kubeval-linux-amd64.tar.gz
+          sudo mv kubeval /usr/local/bin
+      
+      - name: Validate YAML syntax
+        run: |
+          for file in k8s/base/*.yaml; do
+            echo "Validating $file"
+            kubectl apply --dry-run=client -f "$file" || exit 1
+          done
+      
+      - name: Run kubeval
+        run: |
+          kubeval k8s/base/*.yaml || exit 1
+      
+      - name: Check for deprecated APIs
+        run: |
+          echo "Checking for deprecated Kubernetes APIs..."
+          for file in k8s/base/*.yaml; do
+            if grep -q "apiVersion: extensions/v1beta1" "$file"; then
+              echo "❌ DEPRECATED API found in $file"
+              exit 1
+            fi
+          done
+          echo "✅ No deprecated APIs found"
